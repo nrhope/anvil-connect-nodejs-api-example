@@ -6,17 +6,48 @@ var express = require('express')
 
 anvil.configure({
   provider: {
-    uri:    'https://YOUR.AUTH.SERVER',
-    key:     process.env.ANVIL_CONNECT_PUBLIC_KEY
+    uri:    'http://localhost:3000'
+
+    // key: deprecated in anvil-connect-nodejs v0.1.10, as retrieved from anvil-connect's /jwks endpoint
   },
   client: {
-    id:     'YOUR.CLIENT.ID',
-    token:  'YOUR.CLIENT.JWT'
+    id:     'b5b31f48-5316-426e-8a6f-84b381d5b7c0',
+    token:  'a59381e9d01262457ad7'
   },
   params: {
-    redirectUri: 'NOT NEEDED FOR API'
-  }
+    redirectUri: 'http://localhost:5000/auth/oidc/callback'
+  },
+  extra_params: ['openid']
 });
+
+// force auth to be performed against anvil-connect provider
+server.get('/authorize', anvil.authorize({ }));
+
+// ensure redirectUri is called when token is present
+server.get('/auth/oidc/callback', function (req, res, next) {
+  anvil.callback(req.url, function (err, authorization) {
+    var retObj = {};
+    if (err)
+      retObj = { "error": err };
+    else
+      retObj =
+      {
+          "authorization.id_claims.iss": authorization.id_claims.iss,
+          "authorization.id_claims.sub": authorization.id_claims.sub,
+          "authorization.id_claims.aud": authorization.id_claims.aud,
+          "authorization.id_claims.exp": authorization.id_claims.exp,
+          "authorization.id_claims.iat": authorization.id_claims.iat,
+          "SEP": "**********************",
+          "authorization.access_token": authorization.access_token,
+          "authorization.id_token": authorization.id_token,
+          "authorization.refresh_token": authorization.refresh_token,
+          "authorization.expires_in": authorization.expires_in
+        };
+    res.send("<pre>" + JSON.stringify(retObj, null, '\t') + "</pre>");
+  });
+});
+
+server.get('/authorize/openid', anvil.authorize({ endpoint: 'connect/openid' }));
 
 /**
  * Protect the entire server
@@ -25,9 +56,6 @@ anvil.configure({
 server.get('/', function (req, res, next) {
   res.send('public');
 });
-
-//server.use(anvil.verify({ scope: '' }))
-
 
 /**
  * Or protect specific routes. Without options, the middleware
@@ -44,7 +72,7 @@ server.get('/widgets', anvil.verify(), function (req, res, next) {
  */
 
 var authorize = anvil.verify({
-  scope: 'sprocket.read'
+  scope: '' // 'sprocket.read'
 });
 
 server.get('/sprockets', authorize, function (req, res, next) {
@@ -56,6 +84,6 @@ server.get('/sprockets', authorize, function (req, res, next) {
  * Start the server
  */
 
-server.listen(3003, function () {
-  console.log('API protected by Anvil Connect on port 3003');
+server.listen(5000, function () {
+  console.log('API protected by Anvil Connect on port 5000');
 });
