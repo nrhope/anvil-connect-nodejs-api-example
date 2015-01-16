@@ -15,16 +15,22 @@ anvil.configure({
     token:  'a59381e9d01262457ad7'
   },
   params: {
-    redirectUri: 'http://localhost:5000/auth/oidc/callback'
+    redirectUri: 'http://yarris.anvil.ngrok.com/auth/oidc/callback'
   },
   extra_params: ['openid']
 });
 
 // force auth to be performed against anvil-connect provider
+
+server.get('/authorize/openid/callback', anvil.authorize_proxy({ provider: 'openid' }));
+
+server.get('/authorize/openid', anvil.authorize({ provider: 'openid' }));
+//server.get('/authorize/openid', anvil.authorize({ extra_params: ['openid'] }));
 server.get('/authorize', anvil.authorize({ }));
+// node-http-proxy maybe?
 
 // ensure redirectUri is called when token is present
-server.get('/auth/oidc/callback', function (req, res, next) {
+server.get('/authorize/oidc/callback', function (req, res, next) {
   anvil.callback(req.url, function (err, authorization) {
     var retObj = {};
     if (err)
@@ -47,7 +53,6 @@ server.get('/auth/oidc/callback', function (req, res, next) {
   });
 });
 
-server.get('/authorize/openid', anvil.authorize({ endpoint: 'connect/openid' }));
 
 /**
  * Protect the entire server
