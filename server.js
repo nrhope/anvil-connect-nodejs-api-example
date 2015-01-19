@@ -15,41 +15,55 @@ anvil.configure({
     token:  'a59381e9d01262457ad7'
   },
   params: {
-    redirectUri: 'http://yarris.anvil.ngrok.com/auth/oidc/callback'
-  },
-  extra_params: ['openid']
+    redirectUri: 'http://yarris.anvil.ngrok.com/authorize/oidc/callback'
+  }
 });
 
 // force auth to be performed against anvil-connect provider
-
+server.get('/authorize/openid', anvil.authorize_proxy({ provider: 'openid' }));
 server.get('/authorize/openid/callback', anvil.authorize_proxy({ provider: 'openid' }));
 
-server.get('/authorize/openid', anvil.authorize({ provider: 'openid' }));
 //server.get('/authorize/openid', anvil.authorize({ extra_params: ['openid'] }));
 server.get('/authorize', anvil.authorize({ }));
+
+server.get('/signout', anvil.signout({ }));
+
 // node-http-proxy maybe?
 
 // ensure redirectUri is called when token is present
 server.get('/authorize/oidc/callback', function (req, res, next) {
   anvil.callback(req.url, function (err, authorization) {
-    var retObj = {};
-    if (err)
-      retObj = { "error": err };
-    else
-      retObj =
+    var authInfo = {};
+    if (err) {
+      authInfo = { "error": err };
+      res.send("<pre>authInfo=" + JSON.stringify(authInfo, null, '\t') + "</pre>");
+    }
+    else {
+      authInfo =
       {
-          "authorization.id_claims.iss": authorization.id_claims.iss,
-          "authorization.id_claims.sub": authorization.id_claims.sub,
-          "authorization.id_claims.aud": authorization.id_claims.aud,
-          "authorization.id_claims.exp": authorization.id_claims.exp,
-          "authorization.id_claims.iat": authorization.id_claims.iat,
-          "SEP": "**********************",
-          "authorization.access_token": authorization.access_token,
-          "authorization.id_token": authorization.id_token,
-          "authorization.refresh_token": authorization.refresh_token,
-          "authorization.expires_in": authorization.expires_in
-        };
-    res.send("<pre>" + JSON.stringify(retObj, null, '\t') + "</pre>");
+        "authorization.id_claims.iss": authorization.id_claims.iss,
+        "authorization.id_claims.sub": authorization.id_claims.sub,
+        "authorization.id_claims.aud": authorization.id_claims.aud,
+        "authorization.id_claims.exp": authorization.id_claims.exp,
+        "authorization.id_claims.iat": authorization.id_claims.iat,
+        "authorization.access_token": authorization.access_token,
+        "authorization.id_token": authorization.id_token,
+        "authorization.refresh_token": authorization.refresh_token,
+        "authorization.expires_in": authorization.expires_in
+      };
+      anvil.userInfo(authorization.access_token, function (err, userInfo) {
+        var   respPage;
+
+        if (err)
+          respPage = "authInfo=" + JSON.stringify(authInfo, null, '\t')
+            + ", Error: " + JSON.stringify(err, null, '\t');
+        else
+          respPage = "authInfo=" + JSON.stringify(authInfo, null, '\t')
+            + ", userInfo=" + JSON.stringify(userInfo, null, '\t');
+        //res.send("<pre>" + respPage + "</pre><br><a href='/signout?code=" + req.query.code + "'>Signout</a>");
+        res.send("<pre>" + respPage + "</pre><br><a href='/signout'>Signout</a>");
+      });
+    }
   });
 });
 
