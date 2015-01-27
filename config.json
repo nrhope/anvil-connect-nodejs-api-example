@@ -1,0 +1,12 @@
+{
+  "provider": {
+    "uri":    "http://localhost:3000"
+  },
+  "client": {
+    "id":     "b5b31f48-5316-426e-8a6f-84b381d5b7c0",
+    "token":  "a59381e9d01262457ad7"
+  },
+  "params": {
+    "redirectUri": "http://yarris.anvil.ngrok.com/authorize/oidc/callback"
+  }
+}

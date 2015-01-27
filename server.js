@@ -1,23 +1,13 @@
-var express = require('express')
-  , anvil = require('anvil-connect-sdk')
-  , server = express()
+var express     = require('express')
+  , anvil       = require('anvil-connect-sdk')
+  , cwd         = process.cwd()
+  , path        = require('path')
+  , config      = require(path.join(cwd, 'config.json'))
+  , server      = express()
   ;
 
 
-anvil.configure({
-  provider: {
-    uri:    'http://localhost:3000'
-
-    // key: deprecated in anvil-connect-nodejs v0.1.10, as retrieved from anvil-connect's /jwks endpoint
-  },
-  client: {
-    id:     'b5b31f48-5316-426e-8a6f-84b381d5b7c0',
-    token:  'a59381e9d01262457ad7'
-  },
-  params: {
-    redirectUri: 'http://yarris.anvil.ngrok.com/authorize/oidc/callback'
-  }
-});
+anvil.configure(config);
 
 // force auth to be performed against anvil-connect provider
 server.get('/authorize/openid', anvil.authorize_proxy({ provider: 'openid' }));
